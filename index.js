@@ -25,7 +25,7 @@ function authenticate(username, password) {
           })
           .catch(err => {
                //a 302 response is sent back if the content-type header is set correctly
-               //but has missing/invalid values in the request body
+               //but has missing/invalid fields in the request body
                if (
                     _.get(err, "response.status") == 302 &&
                     _.get(err, "response.headers.set-cookie")
@@ -45,9 +45,31 @@ function authenticate(username, password) {
           });
 }
 
-authenticate(config.employeeId, config.password)
-     .then(token => {
-          //...
-          console.log(token);
-     })
-     .catch(err => console.log(err));
+function retrieveSSOServerURL(token) {
+     return axios({
+          url: `https://beta.hrpassport.com/api-sso/v1/sso/KIM/${
+               config.employeeId
+          }/sso-artifacts/stratustime?peoId=PAS&param=`,
+          method: "GET",
+          headers: {
+               Cookie: `TriNetAuthCookie=${token}`
+          }
+     }).then(res => {
+          if (_.get(res, "data.data.ssoServerURL")) {
+               return Promise.resolve(res.data.data.ssoServerURL);
+          }
+          return Promise.reject("Retrieving SSO Server URL has failed!");
+     });
+}
+
+async function pullTimeSheet() {
+     try {
+          const token = await authenticate(config.employeeId, config.password);
+          const url = await retrieveSSOServerURL(token);
+          console.log(url);
+     } catch (err) {
+          console.log(err);
+     }
+}
+
+pullTimeSheet();
