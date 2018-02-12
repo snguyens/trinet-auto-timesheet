@@ -1,24 +1,26 @@
 {
-  "name": "trinet-auto-timesheet",
-  "version": "1.0.0",
-  "description": "trinet-auto-timesheet",
-  "main": "index.js",
-  "build": "babel server --out-dir build --presets=es2015 && webpack",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/snguyens/trinet-auto-timesheet.git"
-  },
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/snguyens/trinet-auto-timesheet/issues"
-  },
-  "homepage": "https://github.com/snguyens/trinet-auto-timesheet#readme",
-  "dependencies": {
-    "axios": "^0.17.1"
-  },
-  "devDependencies": {}
+     "name": "trinet-auto-timesheet",
+     "version": "1.0.0",
+     "description": "trinet-auto-timesheet",
+     "main": "index.js",
+     "build": "babel server --out-dir build --presets=es2015 && webpack",
+     "scripts": {
+          "test": "echo \"Error: no test specified\" && exit 1"
+     },
+     "repository": {
+          "type": "git",
+          "url": "git+https://github.com/snguyens/trinet-auto-timesheet.git"
+     },
+     "author": "",
+     "license": "ISC",
+     "bugs": {
+          "url": "https://github.com/snguyens/trinet-auto-timesheet/issues"
+     },
+     "homepage": "https://github.com/snguyens/trinet-auto-timesheet#readme",
+     "dependencies": {
+          "axios": "^0.17.1",
+          "lodash": "^4.17.5",
+          "querystring": "^0.2.0"
+     },
+     "devDependencies": {}
 }
