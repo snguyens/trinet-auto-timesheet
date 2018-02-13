@@ -1,6 +1,5 @@
 var axios = require("axios");
 var querystring = require("querystring");
-var qs = require("qs");
 var _ = require("lodash");
 var config = require("./config.json");
 
@@ -117,10 +116,16 @@ function setTimeSheet(cloudCookies) {
           data: timeSheetPayload
      })
           .then(res => {
-               //console.log(res);
+               if (_.get(res, "data.__error")) {
+                    return Promise.reject(
+                         "There was an error while trying to set your time sheet!"
+                    );
+               }
+               return Promise.resolve(
+                    "Congratulations, you have successfully set your time sheet!"
+               );
           })
           .catch(err => {
-               console.log(err);
                return Promise.reject(
                     "An error has occurred while setting your time sheet!"
                );
@@ -132,10 +137,8 @@ function setTimeSheet(cloudCookies) {
           const token = await authenticate(config.employeeId, config.password);
           const ssoServerURL = await retrieveSSOServerURL(token);
           const cloudCookies = await establishCloudSession(ssoServerURL);
-          await setTimeSheet(cloudCookies);
-          console.log(
-               "Congratulations, you have successfully set your time sheet!"
-          );
+          const timesheet = await setTimeSheet(cloudCookies);
+          console.log(timesheet);
      } catch (err) {
           console.log(err);
      }
