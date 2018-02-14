@@ -1,0 +1,29 @@
+{
+     "Monday": [
+          "work: 9:00am-12:00pm",
+          "meal: 12:00pm-1:00pm",
+          "work: 1:00pm-6:00pm"
+     ],
+     "Tuesday": [
+          "work: 9:00am-12:00pm",
+          "meal: 12:00pm-1:00pm",
+          "work: 1:00pm-6:00pm"
+     ],
+     "Wednesday": [
+          "work: 9:00am-12:00pm",
+          "meal: 12:00pm-1:00pm",
+          "work: 1:00pm-6:00pm"
+     ],
+     "Thursday": [
+          "work: 9:00am-12:00pm",
+          "meal: 12:00pm-1:00pm",
+          "work: 1:00pm-6:00pm"
+     ],
+     "Friday": [
+          "work: 9:00am-12:00pm",
+          "meal: 12:00pm-1:00pm",
+          "work: 1:00pm-6:00pm"
+     ],
+     "Saturday": [],
+     "Sunday": []
+}
