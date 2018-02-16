@@ -30,9 +30,19 @@ exports.calculateTimeRange = () => {
     }
 
     return {
-        firstWeekStart: firstWeekStart.format("YYYY-MM-DD"),
-        firstWeekEnd: firstWeekEnd.format("YYYY-MM-DD"),
-        secondWeekStart: secondWeekStart.format("YYYY-MM-DD"),
-        secondWeekEnd: secondWeekEnd.format("YYYY-MM-DD")
+        firstWeekStart: moment(firstWeekStart),
+        firstWeekEnd: moment(firstWeekEnd),
+        secondWeekStart: moment(secondWeekStart),
+        secondWeekEnd: moment(secondWeekEnd)
     };
+};
+
+exports.displayDaysBetweenDates = (startDate, endDate) => {
+    const today = startDate.clone();
+    const dates = [];
+    while (today.isSameOrBefore(endDate)) {
+        dates.push(today.format("YYYY-MM-DD"));
+        today.add(1, "days");
+    }
+    return dates;
 };
