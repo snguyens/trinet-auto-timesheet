@@ -27,7 +27,7 @@ function authenticate(username, password) {
         })
         .catch(err => {
             //a 302 response is sent back if the content-type header is set correctly
-            //but has missing/invalid fields in the request body
+            //need to check against missing/invalid fields in the request body
             if (
                 _.get(err, "response.status") == 302 &&
                 _.get(err, "response.headers.set-cookie")
@@ -64,6 +64,7 @@ function retrieveSSOServerURL(token) {
             return Promise.reject("Retrieving SSO Server URL has failed!");
         })
         .catch(err => {
+            console.log(err);
             return Promise.reject(
                 "An error has occurred while trying to retrieve the SSO Server URL!"
             );
@@ -99,6 +100,7 @@ function readTimeEntries() {
     const {
         firstWeekStart,
         firstWeekEnd,
+        secondWeekStart,
         secondWeekEnd
     } = calculateTimeRange();
     const listOfDays = displayDaysBetweenDates(firstWeekStart, secondWeekEnd);
@@ -113,47 +115,37 @@ function readTimeEntries() {
     ];
     let timeSheetPayload = "timeSheetDetails=[";
     for (let i = 0; i < days.length; i++) {
-        const dayEntries = timesheet.week1[days[i]];
+        const entries = timesheet.week1[days[i]];
         const date = listOfDays[i].split("-");
-        const year = date[0];
-        const month = date[1];
-        const day = date[2];
-        if (dayEntries.length == 0) {
+        const year = date[0],
+            month = date[1],
+            day = date[2];
+        if (entries.length == 0) {
             timeSheetPayload += `{"Type":"-1","Date":"${year}-${month}-${day} 00:00:00","StartTime":"08:00 AM","EndTime":"","Hours":0,"Column1Value":0,"Column2Value":0,"Column3Value":0,"Column4Value":0,"Column5Value":0,"Column6Value":0,"Column7Value":0,"TimeSlicePreIDIn":"","TimeSlicePreIDOut":"","isDeleted":"false","isModified":"false","isTransfer":""},`;
             continue;
         }
-        for (let entry of dayEntries) {
+        for (let entry of entries) {
             entry = entry.split(/:(.+)/);
-            const type = entry[0] === "meal" ? -2 : -1;
+            const actionType = entry[0] === "meal" ? -2 : -1;
             const timeInterval = entry[1].split("-");
             const startTime = timeInterval[0]
                 ? timeInterval[0].trim()
                 : "08:00 AM";
             const endTime = timeInterval[1] ? timeInterval[1].trim() : "";
-            timeSheetPayload += `{"Type":"${type}","Date":"${year}-${month}-${day} 00:00:00","StartTime":"${startTime}","EndTime":"${endTime}","Hours":0,"Column1Value":0,"Column2Value":0,"Column3Value":0,"Column4Value":0,"Column5Value":0,"Column6Value":0,"Column7Value":0,"TimeSlicePreIDIn":"","TimeSlicePreIDOut":"","isDeleted":"false","isModified":"true","isTransfer":""},`;
+            timeSheetPayload += `{"Type":"${actionType}","Date":"${year}-${month}-${day} 00:00:00","StartTime":"${startTime}","EndTime":"${endTime}","Hours":0,"Column1Value":0,"Column2Value":0,"Column3Value":0,"Column4Value":0,"Column5Value":0,"Column6Value":0,"Column7Value":0,"TimeSlicePreIDIn":"","TimeSlicePreIDOut":"","isDeleted":"false","isModified":"true","isTransfer":""},`;
         }
     }
-    timeSheetPayload = timeSheetPayload.substring(
-        0,
-        timeSheetPayload.length - 1
-    );
-    timeSheetPayload += `]&isExpressEntry=true&From=${firstWeekStart.format(
-        "YYYY-MM-DD"
-    )} 00:00:00&To=${firstWeekEnd.format("YYYY-MM-DD")} 00:00:00`;
+    timeSheetPayload = timeSheetPayload.slice(0, -1);
+    timeSheetPayload += `]&isExpressEntry=true&From=${firstWeekStart} 00:00:00&To=${firstWeekEnd} 00:00:00`;
     return timeSheetPayload;
 }
 
 function submitTimeSheet(cloudCookies) {
-    let queryParameter, value;
-    for (let cookie of cloudCookies) {
-        if (cookie.startsWith("PreferedLanguage")) continue;
-        const auth = cookie.split(";")[0].split(/=(.+)/);
-        queryParameter = auth[0][0];
-        value = auth[0].substring(1);
-        break;
-    }
     const requestCookie =
         cloudCookies[0].split(";")[0] + "; " + cloudCookies[1].split(";")[0];
+    const authCookieName = cloudCookies[1].split(";")[0].split(/=(.+)/);
+    const queryParameter = authCookieName[0][0];
+    const value = authCookieName[0].substring(1);
     return axios({
         url: `https://trinet.cloud.centralservers.com/EmployeeHome/EmployeeHome/SubmitTimesheetEntryDetails?${queryParameter}=${value}`,
         method: "POST",

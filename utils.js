@@ -30,15 +30,15 @@ exports.calculateTimeRange = () => {
     }
 
     return {
-        firstWeekStart: moment(firstWeekStart),
-        firstWeekEnd: moment(firstWeekEnd),
-        secondWeekStart: moment(secondWeekStart),
-        secondWeekEnd: moment(secondWeekEnd)
+        firstWeekStart: moment(firstWeekStart).format("YYYY-MM-DD"),
+        firstWeekEnd: moment(firstWeekEnd).format("YYYY-MM-DD"),
+        secondWeekStart: moment(secondWeekStart).format("YYYY-MM-DD"),
+        secondWeekEnd: moment(secondWeekEnd).format("YYYY-MM-DD")
     };
 };
 
 exports.displayDaysBetweenDates = (startDate, endDate) => {
-    const today = startDate.clone();
+    const today = moment(startDate);
     const dates = [];
     while (today.isSameOrBefore(endDate)) {
         dates.push(today.format("YYYY-MM-DD"));
