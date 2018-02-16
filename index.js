@@ -3,7 +3,7 @@ var querystring = require("querystring");
 var _ = require("lodash");
 var config = require("./config.json");
 var timesheet = require("./timesheet.json");
-var { calculateTimeRange } = require("./utils");
+var { calculateTimeRange, displayDaysBetweenDates } = require("./utils");
 
 function authenticate(username, password) {
     return axios({
@@ -95,9 +95,55 @@ function establishCloudSession(ssoServerURL) {
         });
 }
 
-const timeSheetPayload = `timeSheetDetails=[{"Type":"-1","Date":"2018-02-11 00:00:00","StartTime":"08:00 AM","EndTime":"","Hours":0,"Column1Value":0,"Column2Value":0,"Column3Value":0,"Column4Value":0,"Column5Value":0,"Column6Value":0,"Column7Value":0,"TimeSlicePreIDIn":"","TimeSlicePreIDOut":"","isDeleted":"false","isModified":"true","isTransfer":""},{"Type":"-1","Date":"2018-02-12 00:00:00","StartTime":"08:00 AM","EndTime":"10:00 AM","Hours":2,"Column1Value":0,"Column2Value":0,"Column3Value":0,"Column4Value":0,"Column5Value":0,"Column6Value":0,"Column7Value":0,"TimeSlicePreIDIn":"24710","TimeSlicePreIDOut":"24711","isDeleted":"false","isModified":"true","isTransfer":"false"},{"Type":"-1","Date":"2018-02-12 00:00:00","StartTime":"08:00 AM","EndTime":"","Hours":0,"Column1Value":0,"Column2Value":0,"Column3Value":0,"Column4Value":0,"Column5Value":0,"Column6Value":0,"Column7Value":0,"TimeSlicePreIDIn":"","TimeSlicePreIDOut":"","isDeleted":"false","isModified":"true","isTransfer":""},{"Type":"-1","Date":"2018-02-13 00:00:00","StartTime":"08:00 AM","EndTime":"","Hours":0,"Column1Value":0,"Column2Value":0,"Column3Value":0,"Column4Value":0,"Column5Value":0,"Column6Value":0,"Column7Value":0,"TimeSlicePreIDIn":"","TimeSlicePreIDOut":"","isDeleted":"false","isModified":"true","isTransfer":""},{"Type":"-1","Date":"2018-02-14 00:00:00","StartTime":"08:00 AM","EndTime":"","Hours":0,"Column1Value":0,"Column2Value":0,"Column3Value":0,"Column4Value":0,"Column5Value":0,"Column6Value":0,"Column7Value":0,"TimeSlicePreIDIn":"","TimeSlicePreIDOut":"","isDeleted":"false","isModified":"true","isTransfer":""},{"Type":"-1","Date":"2018-02-15 00:00:00","StartTime":"08:00 AM","EndTime":"","Hours":0,"Column1Value":0,"Column2Value":0,"Column3Value":0,"Column4Value":0,"Column5Value":0,"Column6Value":0,"Column7Value":0,"TimeSlicePreIDIn":"","TimeSlicePreIDOut":"","isDeleted":"false","isModified":"true","isTransfer":""},{"Type":"-1","Date":"2018-02-16 00:00:00","StartTime":"08:00 AM","EndTime":"","Hours":0,"Column1Value":0,"Column2Value":0,"Column3Value":0,"Column4Value":0,"Column5Value":0,"Column6Value":0,"Column7Value":0,"TimeSlicePreIDIn":"","TimeSlicePreIDOut":"","isDeleted":"false","isModified":"true","isTransfer":""},{"Type":"-1","Date":"2018-02-17 00:00:00","StartTime":"08:00 AM","EndTime":"","Hours":0,"Column1Value":0,"Column2Value":0,"Column3Value":0,"Column4Value":0,"Column5Value":0,"Column6Value":0,"Column7Value":0,"TimeSlicePreIDIn":"","TimeSlicePreIDOut":"","isDeleted":"false","isModified":"true","isTransfer":""}]&isExpressEntry=true&From=2018-02-11 00:00:00&To=2018-02-17 00:00:00`;
+function readTimeEntries() {
+    const {
+        firstWeekStart,
+        firstWeekEnd,
+        secondWeekEnd
+    } = calculateTimeRange();
+    const listOfDays = displayDaysBetweenDates(firstWeekStart, secondWeekEnd);
+    const days = [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+    ];
+    let timeSheetPayload = "timeSheetDetails=[";
+    for (let i = 0; i < days.length; i++) {
+        const dayEntries = timesheet.week1[days[i]];
+        const date = listOfDays[i].split("-");
+        const year = date[0];
+        const month = date[1];
+        const day = date[2];
+        if (dayEntries.length == 0) {
+            timeSheetPayload += `{"Type":"-1","Date":"${year}-${month}-${day} 00:00:00","StartTime":"08:00 AM","EndTime":"","Hours":0,"Column1Value":0,"Column2Value":0,"Column3Value":0,"Column4Value":0,"Column5Value":0,"Column6Value":0,"Column7Value":0,"TimeSlicePreIDIn":"","TimeSlicePreIDOut":"","isDeleted":"false","isModified":"false","isTransfer":""},`;
+            continue;
+        }
+        for (let entry of dayEntries) {
+            entry = entry.split(/:(.+)/);
+            const type = entry[0] === "meal" ? -2 : -1;
+            const timeInterval = entry[1].split("-");
+            const startTime = timeInterval[0]
+                ? timeInterval[0].trim()
+                : "08:00 AM";
+            const endTime = timeInterval[1] ? timeInterval[1].trim() : "";
+            timeSheetPayload += `{"Type":"${type}","Date":"${year}-${month}-${day} 00:00:00","StartTime":"${startTime}","EndTime":"${endTime}","Hours":0,"Column1Value":0,"Column2Value":0,"Column3Value":0,"Column4Value":0,"Column5Value":0,"Column6Value":0,"Column7Value":0,"TimeSlicePreIDIn":"","TimeSlicePreIDOut":"","isDeleted":"false","isModified":"true","isTransfer":""},`;
+        }
+    }
+    timeSheetPayload = timeSheetPayload.substring(
+        0,
+        timeSheetPayload.length - 1
+    );
+    timeSheetPayload += `]&isExpressEntry=true&From=${firstWeekStart.format(
+        "YYYY-MM-DD"
+    )} 00:00:00&To=${firstWeekEnd.format("YYYY-MM-DD")} 00:00:00`;
+    return timeSheetPayload;
+}
 
-function setTimeSheet(cloudCookies) {
+function submitTimeSheet(cloudCookies) {
     let queryParameter, value;
     for (let cookie of cloudCookies) {
         if (cookie.startsWith("PreferedLanguage")) continue;
@@ -115,7 +161,7 @@ function setTimeSheet(cloudCookies) {
             "Content-Type": "application/x-www-form-urlencoded",
             Cookie: requestCookie
         },
-        data: timeSheetPayload
+        data: readTimeEntries()
     })
         .then(res => {
             if (_.get(res, "data.__error")) {
@@ -134,28 +180,28 @@ function setTimeSheet(cloudCookies) {
         });
 }
 
-// (async () => {
-//     try {
-//         console.log(
-//             " Attempting to authenticate with provided credentials in config file..."
-//         );
-//         const token = await authenticate(config.employeeId, config.password);
-//         console.log(" Attempting to retrieve SSO server URL...");
-//         const ssoServerURL = await retrieveSSOServerURL(token);
-//         console.log(
-//             " Attempting to retrieve cookies to establish cloud session..."
-//         );
-//         const cloudCookies = await establishCloudSession(ssoServerURL);
-//         console.log(
-//             " Attempting to set time sheet with provided times in config file..."
-//         );
-//         const timesheet = await setTimeSheet(cloudCookies);
-//         console.log(
-//             "\x1b[32m",
-//             "Congratulations, you have successfully set your time sheet!",
-//             "\x1b[0m"
-//         );
-//     } catch (err) {
-//         console.log(err);
-//     }
-// })();
+(async () => {
+    try {
+        console.log(
+            " Attempting to authenticate with provided credentials in config file..."
+        );
+        const token = await authenticate(config.employeeId, config.password);
+        console.log(" Attempting to retrieve SSO server URL...");
+        const ssoServerURL = await retrieveSSOServerURL(token);
+        console.log(
+            " Attempting to retrieve cookies to establish cloud session..."
+        );
+        const cloudCookies = await establishCloudSession(ssoServerURL);
+        console.log(
+            " Attempting to set time sheet with provided times in config file..."
+        );
+        const timesheet = await submitTimeSheet(cloudCookies);
+        console.log(
+            "\x1b[32m",
+            "Congratulations, you have successfully set your time sheet!",
+            "\x1b[0m"
+        );
+    } catch (err) {
+        console.log(err);
+    }
+})();
