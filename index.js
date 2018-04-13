@@ -114,9 +114,18 @@ function readTimeEntries() {
         "Saturday"
     ];
     let timeSheetPayload = "timeSheetDetails=[";
+    timeSheetPayload += constructTimeSheetPayload(days, listOfDays, 1);
+    timeSheetPayload += constructTimeSheetPayload(days, listOfDays, 2);
+    timeSheetPayload = timeSheetPayload.slice(0, -1);
+    timeSheetPayload += `]&isExpressEntry=true&From=${firstWeekStart} 00:00:00&To=${secondWeekEnd} 00:00:00`;
+    return timeSheetPayload;
+}
+
+function constructTimeSheetPayload(days, listOfDays, week) {
+    let timeSheetPayload = ``;
     for (let i = 0; i < days.length; i++) {
         const entries = timesheet.week1[days[i]];
-        const date = listOfDays[i].split("-");
+        const date = listOfDays[i + (week == 2 ? 7 : 0)].split("-");
         const year = date[0],
             month = date[1],
             day = date[2];
@@ -135,9 +144,7 @@ function readTimeEntries() {
             timeSheetPayload += `{"Type":"${actionType}","Date":"${year}-${month}-${day} 00:00:00","StartTime":"${startTime}","EndTime":"${endTime}","Hours":0,"Column1Value":0,"Column2Value":0,"Column3Value":0,"Column4Value":0,"Column5Value":0,"Column6Value":0,"Column7Value":0,"TimeSlicePreIDIn":"","TimeSlicePreIDOut":"","isDeleted":"false","isModified":"true","isTransfer":""},`;
         }
     }
-    timeSheetPayload = timeSheetPayload.slice(0, -1);
-    timeSheetPayload += `]&isExpressEntry=true&From=${firstWeekStart} 00:00:00&To=${firstWeekEnd} 00:00:00`;
-    return timeSheetPayload;
+    return timeSheetPayload
 }
 
 function submitTimeSheet(cloudCookies) {
