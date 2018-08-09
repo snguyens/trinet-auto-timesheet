@@ -27,7 +27,7 @@ function authenticate(username, password) {
         })
         .catch(err => {
             //a 302 response is sent back if the content-type header is set correctly
-            //need to check against missing/invalid fields in the request body
+            //need to check for missing/invalid fields in the request body
             if (
                 _.get(err, "response.status") == 302 &&
                 _.get(err, "response.headers.set-cookie")
@@ -64,7 +64,6 @@ function retrieveSSOServerURL(token) {
             return Promise.reject("Retrieving SSO Server URL has failed!");
         })
         .catch(err => {
-            console.log(err);
             return Promise.reject(
                 "An error has occurred while trying to retrieve the SSO Server URL!"
             );
@@ -96,14 +95,16 @@ function establishCloudSession(ssoServerURL) {
         });
 }
 
-function readTimeEntries() {
-    const {
-        firstWeekStart,
-        firstWeekEnd,
-        secondWeekStart,
-        secondWeekEnd
-    } = calculateTimeRange();
-    const listOfDays = displayDaysBetweenDates(firstWeekStart, secondWeekEnd);
+function timeSheetInfo() {
+    let timeSheetPayload = "timeSheetDetails=[";
+    timeSheetPayload += constructTimeSheetPayload(1);
+    timeSheetPayload += constructTimeSheetPayload(2);
+    timeSheetPayload = timeSheetPayload.slice(0, -1);
+    timeSheetPayload += `]&isExpressEntry=true&From=${firstWeekStart} 00:00:00&To=${secondWeekEnd} 00:00:00`;
+    return timeSheetPayload;
+}
+
+function constructTimeSheetPayload(week) {
     const days = [
         "Sunday",
         "Monday",
@@ -113,15 +114,14 @@ function readTimeEntries() {
         "Friday",
         "Saturday"
     ];
-    let timeSheetPayload = "timeSheetDetails=[";
-    timeSheetPayload += constructTimeSheetPayload(days, listOfDays, 1);
-    timeSheetPayload += constructTimeSheetPayload(days, listOfDays, 2);
-    timeSheetPayload = timeSheetPayload.slice(0, -1);
-    timeSheetPayload += `]&isExpressEntry=true&From=${firstWeekStart} 00:00:00&To=${secondWeekEnd} 00:00:00`;
-    return timeSheetPayload;
-}
 
-function constructTimeSheetPayload(days, listOfDays, week) {
+    const {
+        firstWeekStart,
+        secondWeekEnd
+    } = calculateTimeRange();
+
+    const listOfDays = displayDaysBetweenDates(firstWeekStart, secondWeekEnd);
+
     let timeSheetPayload = ``;
     for (let i = 0; i < days.length; i++) {
         const entries = timesheet.week1[days[i]];
@@ -160,7 +160,7 @@ function submitTimeSheet(cloudCookies) {
             "Content-Type": "application/x-www-form-urlencoded",
             Cookie: requestCookie
         },
-        data: readTimeEntries()
+        data: timeSheetInfo()
     })
         .then(res => {
             if (_.get(res, "data.__error")) {
@@ -194,7 +194,7 @@ function submitTimeSheet(cloudCookies) {
         console.log(
             " Attempting to set time sheet with provided times in config file..."
         );
-        const timesheet = await submitTimeSheet(cloudCookies);
+        await submitTimeSheet(cloudCookies);
         console.log(
             "\x1b[32m",
             "Congratulations, you have successfully set your time sheet!",
