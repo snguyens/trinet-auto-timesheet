@@ -96,15 +96,16 @@ function establishCloudSession(ssoServerURL) {
 }
 
 function timeSheetInfo() {
+    const timeRange = calculateTimeRange();
     let timeSheetPayload = "timeSheetDetails=[";
-    timeSheetPayload += constructTimeSheetPayload(1);
-    timeSheetPayload += constructTimeSheetPayload(2);
+    timeSheetPayload += constructTimeSheetPayload(1, timeRange);
+    timeSheetPayload += constructTimeSheetPayload(2, timeRange);
     timeSheetPayload = timeSheetPayload.slice(0, -1);
-    timeSheetPayload += `]&isExpressEntry=true&From=${firstWeekStart} 00:00:00&To=${secondWeekEnd} 00:00:00`;
+    timeSheetPayload += `]&isExpressEntry=true&From=${timeRange.firstWeekStart} 00:00:00&To=${timeRange.secondWeekEnd} 00:00:00`;
     return timeSheetPayload;
 }
 
-function constructTimeSheetPayload(week) {
+function constructTimeSheetPayload(week, timeRange) {
     const days = [
         "Sunday",
         "Monday",
@@ -115,12 +116,7 @@ function constructTimeSheetPayload(week) {
         "Saturday"
     ];
 
-    const {
-        firstWeekStart,
-        secondWeekEnd
-    } = calculateTimeRange();
-
-    const listOfDays = displayDaysBetweenDates(firstWeekStart, secondWeekEnd);
+    const listOfDays = displayDaysBetweenDates(timeRange.firstWeekStart, timeRange.secondWeekEnd);
 
     let timeSheetPayload = ``;
     for (let i = 0; i < days.length; i++) {
